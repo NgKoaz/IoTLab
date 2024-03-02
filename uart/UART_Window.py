@@ -9,21 +9,17 @@ class UART:
     IP = socket.gethostbyname(socket.gethostname())
     PORT = 8888
     SERVER.bind((IP, PORT))
+    ser = None
     message = ""
     lock = threading.Lock()
 
     def __init__(self):
-        self.port = self.getPort()
-        if not self.port:
-            print("Can't find COM port.")
-            return
-        self.ser = serial.Serial(port=self.port, baudrate=115200)
-        print("Connected to " + self.port)
+        self.connectCOM()
 
         self.SERVER.listen()
-        print("Connected to " + self.IP + ":" + str(self.PORT))
+        print("Listening on " + self.IP + ":" + str(self.PORT))
 
-        thread = threading.Thread(target=self.handleRequest)
+        thread = threading.Thread(target=self.listen)
         thread.daemon = True
         thread.start()
 
@@ -31,25 +27,44 @@ class UART:
             self.readSerial()
             time.sleep(1)
 
-    def handleRequest(self):
-        conn, addr = self.SERVER.accept()
+    def listen(self):
         while True:
-            mes = conn.recv(1).decode("UTF-8")
-            if mes == "!":
-                self.lock.acquire()
-                # Eight bytes for length of message
-                payload = self.message.encode("UTF-8")
-                payloadSize = str(len(payload)).encode("UTF-8")
+            conn, addr = self.SERVER.accept()
+            print(str(addr) + " is connected!")
+            thread = threading.Thread(target=self.handleRequest, args=(conn, addr))
+            thread.daemon = True
+            thread.start()
 
-                # Send length first
-                header = payloadSize + (8 - len(payloadSize)) * b" "
-                conn.send(header)
-                # Send payload
-                conn.send(payload)
-                self.message = ""
+    def handleRequest(self, conn, addr):
+        while True:
+            try:
+                mes = conn.recv(1).decode("UTF-8")
+            except:
+                print(str(addr) + " is disconnected!")
+                return
+
+            self.lock.acquire()
+            try:
+                if mes == "!":
+
+                    # Eight bytes for length of message
+                    payload = self.message.encode("UTF-8")
+                    payloadSize = str(len(payload)).encode("UTF-8")
+
+                    # Send length first
+                    header = payloadSize + (8 - len(payloadSize)) * b" "
+                    conn.send(header)
+                    # Send payload
+                    conn.send(payload)
+                    self.message = ""
+
+                else:
+                    conn.send("#".encode("UTF-8"))
+            except:
+                print(str(addr) + " is disconnected!")
                 self.lock.release()
-            else:
-                conn.send("#".encode("UTF-8"))
+                return
+            self.lock.release()
 
     def readSerial(self):
         numByteInWaiting = self.ser.inWaiting()
@@ -59,13 +74,18 @@ class UART:
         self.message = self.message + self.ser.read(numByteInWaiting).decode("UTF-8")
         self.lock.release()
 
-    @staticmethod
-    def getPort():
+    def connectCOM(self):
         for port in serial.tools.list_ports.comports():
             for _str in str(port).split(" "):
                 if _str.startswith("COM"):
-                    return _str
-        return None
+                    try:
+                        self.ser = serial.Serial(port=_str, baudrate=115200)
+                        print("Connected to " + _str)
+                        return
+                    except:
+                        print(_str + " is not available!")
+                        break
+        print("Can't find any COM!")
 
 
 UART()

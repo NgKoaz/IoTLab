@@ -39,25 +39,25 @@ class MyMQTT:
         if disconnect:
             self.disconnectCallback = disconnect
 
-    def connected(self, client):
+    def handleConnected(self, client):
         if self.connectCallback:
             self.connectCallback()
         else:
             print("Connected to broker!")
 
-    def subscribed(self, client, userdata, mid, granted_qos):
+    def handleSubscribed(self, client, userdata, mid, granted_qos):
         if self.subscribeCallback:
             self.subscribeCallback()
         else:
             print("Subscribed successful!")
 
-    def recv_message(self, client, feed_id, payload):
+    def handleRecvMessage(self, client, feed_id, payload):
         if self.messageCallback:
             self.messageCallback(feed_id, payload)
         else:
             print("From", feed_id, "received: ", payload)
 
-    def disconnected(self, client):
+    def handleDisconnected(self, client):
         self.isConnected = False
         if self.disconnectCallback:
             self.disconnectCallback()
@@ -104,8 +104,8 @@ class MyMQTT:
         self.USERNAME = username
         self.KEY = key
         self.CLIENT = MQTTClient(self.USERNAME, self.KEY)
-        self.CLIENT.on_connect = self.connected
-        self.CLIENT.on_subscribe = self.subscribed
-        self.CLIENT.on_message = self.recv_message
-        self.CLIENT.on_disconnect = self.disconnected
+        self.CLIENT.on_connect = self.handleConnected
+        self.CLIENT.on_subscribe = self.handleSubscribed
+        self.CLIENT.on_message = self.handleRecvMessage
+        self.CLIENT.on_disconnect = self.handleDisconnected
 
