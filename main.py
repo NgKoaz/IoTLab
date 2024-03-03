@@ -8,7 +8,7 @@ import sys
 from ai.simple_ai import *
 
 USERNAME = "nguyenkhoa2207"
-KEY = "aio_RBSs051gxVIW3DZTddi1H8WBPVLR"
+KEY = "aio_WJGG26JYscLn0DvE8VDfdi2DPpEP"
 
 BUTTON_FEED_IDs = ["button1", "button2"]
 SENSOR_FEED_IDs = ["sensor1", "sensor2", "sensor3"]
@@ -21,6 +21,9 @@ lastAIResult = ""
 counter_ai = 6
 
 CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+
+sendingLock = threading.Lock()
+
 
 # For UART
 messageUART = ""
@@ -93,11 +96,13 @@ def connectUART():
     # Handle data recv
     global messageUART
     while True:
+        sendingLock.acquire()
         CLIENT.send("!".encode("UTF-8"))
 
         numByte = CLIENT.recv(8).decode("UTF-8").strip()
         numByte = int(numByte)
         newMessage = CLIENT.recv(numByte).decode("UTF-8")
+        sendingLock.release()
 
         messageUART = messageUART + newMessage
 
@@ -107,8 +112,26 @@ def connectUART():
         time.sleep(1)
 
 
+def processMessage(feed_id, payload):
+    print(feed_id, payload)
+    if feed_id == "button1":
+        serialWrite("B1:" + payload)
+    elif feed_id == "button2":
+        serialWrite("B2:" + payload)
+
+
+def serialWrite(payload):
+    payload = payload.encode('UTF-8')
+    size = str(len(payload)).encode('UTF-8')
+    header = size + (8 - len(size)) * b" "
+    with sendingLock:
+        CLIENT.send("#".encode('UTF-8'))
+        CLIENT.send(header)
+        CLIENT.send(payload)
+
+
 if __name__ == "__main__":
-    my_mqtt.setCallback(connect=connectedCallback)
+    my_mqtt.setCallback(connect=connectedCallback, message=processMessage)
     my_mqtt.connect()
 
     thread = threading.Thread(target=connectUART)

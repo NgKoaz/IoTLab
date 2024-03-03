@@ -43,28 +43,30 @@ class UART:
                 print(str(addr) + " is disconnected!")
                 return
 
-            self.lock.acquire()
-            try:
-                if mes == "!":
-
+            if mes == "!":
+                self.lock.acquire()
+                try:
                     # Eight bytes for length of message
                     payload = self.message.encode("UTF-8")
                     payloadSize = str(len(payload)).encode("UTF-8")
-
                     # Send length first
                     header = payloadSize + (8 - len(payloadSize)) * b" "
                     conn.send(header)
                     # Send payload
                     conn.send(payload)
                     self.message = ""
-
-                else:
-                    conn.send("#".encode("UTF-8"))
-            except:
-                print(str(addr) + " is disconnected!")
+                except:
+                    print(str(addr) + "| Connection is interrupted!")
+                    self.lock.release()
+                    return
                 self.lock.release()
-                return
-            self.lock.release()
+            elif mes == "#":
+                try:
+                    header = conn.recv(8).decode('UTF-8').strip()
+                    self.ser.write(conn.recv(int(header)))
+                except:
+                    print(str(addr) + "| Connection is interrupted!")
+                    return
 
     def readSerial(self):
         numByteInWaiting = self.ser.inWaiting()
