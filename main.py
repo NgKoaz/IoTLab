@@ -1,5 +1,6 @@
 from mylib.my_mqtt import MyMQTT
 from ai.simple_ai import SimpleAI
+from uart.UART import UART
 import time
 import threading
 import socket
@@ -16,6 +17,7 @@ AI_FEED_IDs = ["ai"]
 
 my_mqtt = MyMQTT(username=USERNAME, key=KEY)
 simpleAI = SimpleAI()
+uart = UART()
 lastAIResult = ""
 
 counter_ai = 6
@@ -41,7 +43,7 @@ def command_line():
             break
 
 
-def whileRun():
+def aiThread():
     while True:
         global counter_ai, lastAIResult
         counter_ai = counter_ai - 1
@@ -89,23 +91,11 @@ def checkUARTMessage():
             messageUART = messageUART[end + 1:]
 
 
-def connectUART():
-    CLIENT.connect(("192.168.1.11", 8888))
-    print("Connected to UART!")
-
-    # Handle data recv
+def readSerial():
     global messageUART
     while True:
-        sendingLock.acquire()
-        CLIENT.send("!".encode("UTF-8"))
-
-        numByte = CLIENT.recv(8).decode("UTF-8").strip()
-        numByte = int(numByte)
-        newMessage = CLIENT.recv(numByte).decode("UTF-8")
-        sendingLock.release()
-
+        numByte, newMessage = uart.readSerial()
         messageUART = messageUART + newMessage
-
         if numByte > 0:
             print(messageUART)
             checkUARTMessage()
@@ -113,32 +103,22 @@ def connectUART():
 
 
 def processMessage(feed_id, payload):
-    print(feed_id, payload)
     if feed_id == "button1":
-        serialWrite("B1:" + payload)
+        uart.writeSerial("B1:" + payload)
     elif feed_id == "button2":
-        serialWrite("B2:" + payload)
-
-
-def serialWrite(payload):
-    payload = payload.encode('UTF-8')
-    size = str(len(payload)).encode('UTF-8')
-    header = size + (8 - len(size)) * b" "
-    with sendingLock:
-        CLIENT.send("#".encode('UTF-8'))
-        CLIENT.send(header)
-        CLIENT.send(payload)
+        uart.writeSerial("B2:" + payload)
 
 
 if __name__ == "__main__":
     my_mqtt.setCallback(connect=connectedCallback, message=processMessage)
     my_mqtt.connect()
+    uart.connect()
 
-    thread = threading.Thread(target=connectUART)
+    thread = threading.Thread(target=readSerial)
     thread.daemon = True
     thread.start()
 
-    thread = threading.Thread(target=whileRun)
+    thread = threading.Thread(target=aiThread)
     thread.daemon = True
     thread.start()
 
