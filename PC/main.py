@@ -20,7 +20,7 @@ simpleAI = SimpleAI()
 uart = UART()
 lastAIResult = ""
 
-counter_ai = 6
+counter_ai = 11
 
 CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
@@ -48,7 +48,7 @@ def aiThread():
         global counter_ai, lastAIResult
         counter_ai = counter_ai - 1
         if counter_ai <= 0:
-            counter_ai = 5
+            counter_ai = 10
             ai_result = simpleAI.processImage()
             if ai_result != "" and lastAIResult != ai_result:
                 lastAIResult = ai_result
@@ -60,19 +60,17 @@ def aiThread():
 def processData(rawData):
     # !TEMP:23#
     payload = rawData.replace("!", "").replace("#", "")
-    key, value = None, None
     try:
         key, value = payload.split(":")
+        print(key + " = " + value)
+        if key == "TEMP":
+            my_mqtt.publish("sensor1", value)
+        elif key == "LIGHT":
+            my_mqtt.publish("sensor2", value)
+        elif key == "HUMI":
+            my_mqtt.publish("sensor3", value)
     except:
-        print("WRONG FORMAT!")
-
-    print(key + " = " + value)
-    if key == "TEMP":
-        my_mqtt.publish("sensor1", value)
-    elif key == "LIGHT":
-        my_mqtt.publish("sensor2", value)
-    elif key == "HUMI":
-        my_mqtt.publish("sensor3", value)
+        print("WRONG FORMAT: " + payload)
 
 
 def checkUARTMessage():

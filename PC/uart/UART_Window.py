@@ -88,6 +88,6 @@ class UART:
                         print(_str + " is not available!")
                         break
         print("Can't find any COM!")
-
+        
 
 UART()

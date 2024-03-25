@@ -7,7 +7,7 @@ class UART:
     sendingLock = threading.Lock()
 
     def connect(self):
-        self.CLIENT.connect(("192.168.1.11", 8888))
+        self.CLIENT.connect(("10.28.128.235", 8888))
         print("Connected to UART!")
 
     def readSerial(self):

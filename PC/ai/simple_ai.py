@@ -29,7 +29,7 @@ class SimpleAI:
         self.class_names = open("./ai/labels.txt", "r").readlines()
 
         # CAMERA can be 0 or 1 based on default camera of your computer
-        self.camera = cv2.VideoCapture("http://192.168.1.11:8000/camera/mjpeg")
+        self.camera = cv2.VideoCapture("http://10.28.128.235:8000/camera/mjpeg")
 
         thread = threading.Thread(target=self.update)
         thread.daemon = True
