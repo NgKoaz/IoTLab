@@ -8,8 +8,8 @@ import random
 import sys
 from ai.simple_ai import *
 
-USERNAME = ""
-KEY = ""
+USERNAME = "nguyenkhoa2207"
+KEY = "aio_WJGG26JYscLn0DvE8VDfdi2DPpEP"
 
 BUTTON_FEED_IDs = ["button1", "button2"]
 SENSOR_FEED_IDs = ["sensor1", "sensor2", "sensor3"]
