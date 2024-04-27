@@ -9,9 +9,9 @@ import sys
 from ai.simple_ai import *
 
 USERNAME = "nguyenkhoa2207"
-KEY = "aio_WJGG26JYscLn0DvE8VDfdi2DPpEP"
+KEY = "aio_TbjA81SH5llj00Eh57ItDj8GDgTT"
 
-BUTTON_FEED_IDs = ["button1", "button2"]
+BUTTON_FEED_IDs = ["button1", "button2", "ping"]
 SENSOR_FEED_IDs = ["sensor1", "sensor2", "sensor3"]
 AI_FEED_IDs = ["ai"]
 
@@ -26,6 +26,8 @@ CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 sendingLock = threading.Lock()
 
+button1 = 0
+button2 = 0
 
 # For UART
 messageUART = ""
@@ -65,9 +67,9 @@ def processData(rawData):
         print(key + " = " + value)
         if key == "TEMP":
             my_mqtt.publish("sensor1", value)
-        elif key == "LIGHT":
-            my_mqtt.publish("sensor2", value)
         elif key == "HUMI":
+            my_mqtt.publish("sensor2", value)
+        elif key == "LIGHT":
             my_mqtt.publish("sensor3", value)
     except:
         print("WRONG FORMAT: " + payload)
@@ -101,10 +103,18 @@ def readSerial():
 
 
 def processMessage(feed_id, payload):
+    global button1, button2
     if feed_id == "button1":
+        button1 = int(payload)
         uart.writeSerial("B1:" + payload)
+        my_mqtt.publish("response-button1", str(button1))
     elif feed_id == "button2":
+        button2 = int(payload)
         uart.writeSerial("B2:" + payload)
+        my_mqtt.publish("response-button2", str(button2))
+    elif feed_id == "ping":
+        my_mqtt.publish("response-button1", str(button1))
+        my_mqtt.publish("response-button2", str(button2))
 
 
 if __name__ == "__main__":
