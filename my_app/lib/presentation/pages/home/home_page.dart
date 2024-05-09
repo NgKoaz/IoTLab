@@ -26,8 +26,9 @@ class _HomePageState extends State<HomePage> with OnMessageArrived {
     myMqttClient = MyMqttClient(
       "io.adafruit.com",
       "nguyenkhoa2207",
-      "aio_TbjA81SH5llj00Eh57ItDj8GDgTT",
+      "aio_mQvM32JGpuRmiKEIHd4eXTJMNPWB",
     );
+    myMqttClient.connect();
   }
 
   void registerMqttService() {
@@ -121,10 +122,10 @@ class _HomePageState extends State<HomePage> with OnMessageArrived {
     } else if (topic == "sensor3") {
       int value = int.parse(payload);
       context.read<HomeProvider>().setLightValue(value);
-    } else if (topic == "response-button1"){
+    } else if (topic == "response-button1") {
       int value = int.parse(payload);
       context.read<HomeProvider>().setIsFanOn(value);
-    } else if (topic == "response-button2"){
+    } else if (topic == "response-button2") {
       int value = int.parse(payload);
       context.read<HomeProvider>().setIsPumpOn(value);
     }

@@ -9,7 +9,7 @@ import sys
 from ai.simple_ai import *
 
 USERNAME = "nguyenkhoa2207"
-KEY = "aio_TbjA81SH5llj00Eh57ItDj8GDgTT"
+KEY = "aio_mQvM32JGpuRmiKEIHd4eXTJMNPWB"
 
 BUTTON_FEED_IDs = ["button1", "button2", "ping"]
 SENSOR_FEED_IDs = ["sensor1", "sensor2", "sensor3"]
@@ -26,8 +26,14 @@ CLIENT = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
 
 sendingLock = threading.Lock()
 
+tempValue = 0
+humidValue = 0
+lightValue = 0
+
 button1 = 0
 button2 = 0
+
+isAuto = 0
 
 # For UART
 messageUART = ""
@@ -60,6 +66,7 @@ def aiThread():
 
 
 def processData(rawData):
+    global tempValue, humidValue, lightValue
     # !TEMP:23#
     payload = rawData.replace("!", "").replace("#", "")
     try:
@@ -67,10 +74,13 @@ def processData(rawData):
         print(key + " = " + value)
         if key == "TEMP":
             my_mqtt.publish("sensor1", value)
+            tempValue = int(value)
         elif key == "HUMI":
             my_mqtt.publish("sensor2", value)
+            humidValue = int(value)
         elif key == "LIGHT":
             my_mqtt.publish("sensor3", value)
+            lightValue = int(value)
     except:
         print("WRONG FORMAT: " + payload)
 
@@ -126,9 +136,9 @@ if __name__ == "__main__":
     thread.daemon = True
     thread.start()
 
-    thread = threading.Thread(target=aiThread)
-    thread.daemon = True
-    thread.start()
+    # thread = threading.Thread(target=aiThread)
+    # thread.daemon = True
+    # thread.start()
 
     command_line()
 

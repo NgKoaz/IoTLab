@@ -14,6 +14,8 @@ class MyMqttClient {
   final String? _username;
   final String? _password;
   final String _clientId = _generateClientId();
+  bool isConnected = false;
+
 
   List<OnMessageArrived> observers = [];
 
@@ -22,20 +24,21 @@ class MyMqttClient {
       _serverUri,
       _clientId,
     );
-    client.keepAlivePeriod = 30;
-    client.logging(on: false);
+    client.port = 1883;
+    client.keepAlivePeriod = 20;
+    client.onConnected = _onConnected;
+    client.onSubscribed = _onSubscribed;
+
+    client.logging(on: true);
     client.autoReconnect = true;
 
     final MqttConnectMessage conMess = MqttConnectMessage()
         .withClientIdentifier(_clientId)
         .withWillTopic("willTopic")
         .withWillMessage("My Will message")
-        .startClean();
+        .startClean()
+        .withWillQos(MqttQos.atLeastOnce);
     client.connectionMessage = conMess;
-
-    client.onConnected = _onConnected;
-    client.onSubscribed = _onSubscribed;
-    connect();
   }
 
   static String _generateClientId() {
@@ -43,7 +46,7 @@ class MyMqttClient {
     final random = Random();
     final clientId = StringBuffer();
 
-    for (var i = 0; i < 16; i++) {
+    for (var i = 0; i < 8; i++) {
       clientId.write(chars[random.nextInt(chars.length)]);
     }
 
@@ -59,6 +62,7 @@ class MyMqttClient {
   }
 
   void _onConnected() {
+    isConnected = true;
     debugPrint('Connected to MQTT broker');
 
     client.subscribe("$_username/feeds/sensor1", MqttQos.atLeastOnce);
@@ -76,7 +80,8 @@ class MyMqttClient {
       try {
         final List<String> parts = mqttMessage.topic.split("/");
         final String topic = parts.last;
-        final String payload = MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
+        final String payload =
+            MqttPublishPayload.bytesToStringAsString(recMess.payload.message);
         debugPrint('Received message, topic: $topic | payload: $payload');
         for (var observer in observers) {
           observer.onArrived(topic, payload);
@@ -103,6 +108,7 @@ class MyMqttClient {
   }
 
   void publish(String topic, String payload) {
+    if (!isConnected) return;
     final builder = MqttClientPayloadBuilder();
     builder.addString(payload);
     client.publishMessage(
@@ -114,6 +120,7 @@ class MyMqttClient {
 
   void disconnect() {
     debugPrint("Disconnected!");
+    if (!isConnected) return;
     client.disconnect();
   }
 }
